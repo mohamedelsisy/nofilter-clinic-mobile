@@ -256,7 +256,6 @@ const resources = {
       
       // Appointments
       failed_to_load_appointments: 'فشل تحميل المواعيد',
-      no_appointments: 'لا توجد مواعيد',
       cancel_appointment_confirmation: 'هل أنت متأكد من إلغاء هذا الموعد؟',
       appointment_cancelled_successfully: 'تم إلغاء الموعد بنجاح',
       failed_to_cancel_appointment: 'فشل إلغاء الموعد',
@@ -606,7 +605,6 @@ const resources = {
       
       // Appointments
       failed_to_load_appointments: 'Failed to load appointments',
-      no_appointments: 'No appointments',
       cancel_appointment_confirmation: 'Are you sure you want to cancel this appointment?',
       appointment_cancelled_successfully: 'Appointment cancelled successfully',
       failed_to_cancel_appointment: 'Failed to cancel appointment',

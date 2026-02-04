@@ -40,7 +40,6 @@ export default function RootLayout() {
       <I18nextProvider i18n={i18n}>
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="auth" options={{ presentation: 'modal' }} />
         </Stack>
       </I18nextProvider>
     </QueryClientProvider>

@@ -6,6 +6,7 @@ import { AppSettings } from '@/api/types';
 interface ConfigState {
   settings: AppSettings | null;
   apiBaseUrl: string;
+  primaryColor: string;
   setSettings: (settings: AppSettings) => void;
   setApiBaseUrl: (url: string) => void;
   getThemeColor: () => string;
@@ -16,9 +17,13 @@ export const useConfigStore = create<ConfigState>()(
     (set, get) => ({
       settings: null,
       apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:8000/api/v1',
+      primaryColor: '#0d525a',
 
       setSettings: (settings: AppSettings) => {
-        set({ settings });
+        set({ 
+          settings,
+          primaryColor: settings?.primary_color || '#0d525a'
+        });
       },
 
       setApiBaseUrl: (url: string) => {
