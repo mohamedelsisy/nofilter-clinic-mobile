@@ -47,6 +47,10 @@ ios/Pods/
 dist/
 web-build/
 
+# Native folders (managed by Expo Prebuild / CNG)
+android/
+ios/
+
 # Environment
 .env
 .env.local
