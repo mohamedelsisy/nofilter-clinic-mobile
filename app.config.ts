@@ -47,14 +47,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
                 backgroundColor: '#0d525a',
             },
         ],
-        [
-            'expo-build-properties',
-            {
-                android: {
-                    kotlinVersion: '2.0.0',
-                },
-            },
-        ],
     ],
 
     experiments: {
