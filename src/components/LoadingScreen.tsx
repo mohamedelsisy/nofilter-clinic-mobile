@@ -1,19 +1,17 @@
 import React from 'react';
-import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
-import { useTranslation } from 'react-i18next';
-import { useConfigStore } from '@/store/configStore';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 
-export const LoadingScreen: React.FC<{ message?: string }> = ({ message }) => {
-  const { t } = useTranslation();
-  const themeColor = useConfigStore((state) => state.getThemeColor());
+interface LoadingScreenProps {
+  color?: string;
+}
 
+export function LoadingScreen({ color = '#0d525a' }: LoadingScreenProps) {
   return (
     <View style={styles.container}>
-      <ActivityIndicator size="large" color={themeColor} />
-      <Text style={styles.text}>{message || t('loading')}</Text>
+      <ActivityIndicator size="large" color={color} />
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -21,10 +19,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#fff',
-  },
-  text: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#666',
   },
 });
