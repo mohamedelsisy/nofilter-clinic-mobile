@@ -10,6 +10,9 @@ interface ErrorViewProps {
 
 export function ErrorView({ message, onRetry }: ErrorViewProps) {
   const { t } = useTranslation();
+  
+  // Log error for debugging
+  console.error('📛 ErrorView displayed:', message);
 
   return (
     <View style={styles.container}>
@@ -17,6 +20,9 @@ export function ErrorView({ message, onRetry }: ErrorViewProps) {
       <Text style={styles.title}>{t('error_occurred') || 'Error Occurred'}</Text>
       <Text style={styles.message}>
         {message || t('something_went_wrong') || 'Something went wrong. Please try again.'}
+      </Text>
+      <Text style={styles.debugInfo}>
+        Debug Info: Check console logs for details
       </Text>
       {onRetry && (
         <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
@@ -47,9 +53,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 12,
     paddingHorizontal: 20,
     lineHeight: 20,
+  },
+  debugInfo: {
+    fontSize: 11,
+    color: '#999',
+    textAlign: 'center',
+    marginBottom: 24,
+    fontStyle: 'italic',
   },
   retryButton: {
     flexDirection: 'row',

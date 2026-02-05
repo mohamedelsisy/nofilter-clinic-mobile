@@ -47,6 +47,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
                 backgroundColor: '#0d525a',
             },
         ],
+        [
+            'expo-build-properties',
+            {
+                android: {
+                    usesCleartextTraffic: true,
+                },
+            },
+        ],
     ],
 
     experiments: {

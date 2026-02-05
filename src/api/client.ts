@@ -13,13 +13,18 @@ const API_BASE_URL = Constants.expoConfig?.extra?.apiBaseUrl ||
 
 // Create axios instance with dynamic baseURL
 const createApiClient = (): AxiosInstance => {
+  const baseURL = useConfigStore.getState().apiBaseUrl || API_BASE_URL;
+  console.log('🔧 Creating API client with baseURL:', baseURL);
+  
   return axios.create({
-    baseURL: useConfigStore.getState().apiBaseUrl || API_BASE_URL,
-    timeout: 30000,
+    baseURL,
+    timeout: 60000, // Increased to 60 seconds
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     },
+    // Additional axios config for better compatibility
+    validateStatus: (status) => status >= 200 && status < 500,
   });
 };
 
