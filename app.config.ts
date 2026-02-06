@@ -21,6 +21,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ios: {
         supportsTablet: true,
         bundleIdentifier: 'clinic.nofilter.app',
+        infoPlist: {
+            ITSAppUsesNonExemptEncryption: false,
+        },
     },
 
     android: {
@@ -75,7 +78,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         apiBaseUrl:
             process.env.EXPO_PUBLIC_API_BASE_URL || 'https://nofilter.clinic/api/v1',
         eas: {
-            projectId: '605bacad-5678-4941-a11c-9ff5ab5df9b4',
+            projectId: '94cc4579-8473-4428-8c39-3e9f8ab5751b',
         },
     },
 });
