@@ -15,11 +15,14 @@ import { router } from 'expo-router';
 import { useLanguageStore } from '@/store/languageStore';
 import { useConfigStore } from '@/store/configStore';
 import { siteApi } from '@/api/endpoints';
+import { specialOffersApi } from '@/api/endpoints/special-offers';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { ErrorView } from '@/components/ErrorView';
 import { ServiceCard } from '@/components/ServiceCard';
 import { DoctorCard } from '@/components/DoctorCard';
+import { OfferCard } from '@/components/OfferCard';
 import { Ionicons } from '@expo/vector-icons';
+import { useFontFamily } from '@/utils/fonts';
 
 const { width } = Dimensions.get('window');
 
@@ -28,6 +31,7 @@ export default function HomeScreen() {
   const { language, toggleLanguage } = useLanguageStore();
   const { settings, setSettings, getThemeColor } = useConfigStore();
   const themeColor = getThemeColor();
+  const fonts = useFontFamily();
 
   // Fetch settings
   const { data: settingsData, isLoading: isLoadingSettings } = useQuery({
@@ -51,6 +55,13 @@ export default function HomeScreen() {
   } = useQuery({
     queryKey: ['homepage'],
     queryFn: siteApi.getHomepage,
+  });
+
+  // Fetch special offers
+  const { data: specialOffersData } = useQuery({
+    queryKey: ['special-offers', 'homepage'],
+    queryFn: () => specialOffersApi.getSpecialOffers({ page: 1 }),
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   // Show loading screen while initial data is loading
@@ -79,8 +90,12 @@ export default function HomeScreen() {
             <Image source={{ uri: settings.logo }} style={styles.logo} />
           )}
           <View style={styles.headerText}>
-            <Text style={styles.headerTitle}>{clinicName || 'IMCKSA'}</Text>
-            <Text style={styles.headerSubtitle}>{t('welcome')}</Text>
+            <Text style={[styles.headerTitle, { fontFamily: fonts.bold }]}>
+              {clinicName || 'IMCKSA'}
+            </Text>
+            <Text style={[styles.headerSubtitle, { fontFamily: fonts.regular }]}>
+              {t('welcome')}
+            </Text>
           </View>
         </View>
         <TouchableOpacity onPress={toggleLanguage} style={styles.languageButton}>
@@ -122,18 +137,20 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* Featured Services */}
-        {homepageData?.featured_services && homepageData.featured_services.length > 0 && (
+        {/* Services Section */}
+        {homepageData?.services && homepageData.services.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>{t('featured_services')}</Text>
-              <TouchableOpacity onPress={() => router.push('/services')}>
+              <Text style={[styles.sectionTitle, { fontFamily: fonts.bold }]}>
+                {t('our_services')}
+              </Text>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/services')}>
                 <Text style={[styles.sectionLink, { color: themeColor }]}>
                   {t('view_all')}
                 </Text>
               </TouchableOpacity>
             </View>
-            {homepageData.featured_services.slice(0, 3).map((service) => (
+            {homepageData.services.slice(0, 4).map((service) => (
               <ServiceCard
                 key={service.id}
                 service={service}
@@ -146,11 +163,41 @@ export default function HomeScreen() {
           </View>
         )}
 
+        {/* Special Offers */}
+        {specialOffersData?.data && specialOffersData.data.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { fontFamily: fonts.bold }]}>
+                {t('special_offers')}
+              </Text>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/special-offers')}>
+                <Text style={[styles.sectionLink, { color: themeColor }]}>
+                  {t('view_all')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              horizontal
+              data={specialOffersData.data.slice(0, 5)}
+              keyExtractor={(item) => item.id.toString()}
+              showsHorizontalScrollIndicator={false}
+              renderItem={({ item }) => (
+                <OfferCard
+                  offer={item as any}
+                  onPress={() => router.push(`/special-offer/${item.id}`)}
+                />
+              )}
+            />
+          </View>
+        )}
+
         {/* Doctors */}
         {homepageData?.doctors && homepageData.doctors.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>{t('our_doctors')}</Text>
+              <Text style={[styles.sectionTitle, { fontFamily: fonts.bold }]}>
+                {t('our_doctors')}
+              </Text>
               <TouchableOpacity>
                 <Text style={[styles.sectionLink, { color: themeColor }]}>
                   {t('view_all')}
@@ -172,11 +219,13 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* Offers */}
+        {/* Regular Offers */}
         {homepageData?.offers && homepageData.offers.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>{t('latest_offers')}</Text>
+              <Text style={[styles.sectionTitle, { fontFamily: fonts.bold }]}>
+                {t('latest_offers')}
+              </Text>
               <TouchableOpacity onPress={() => router.push('/(tabs)/offers')}>
                 <Text style={[styles.sectionLink, { color: themeColor }]}>
                   {t('view_all')}
@@ -185,7 +234,7 @@ export default function HomeScreen() {
             </View>
             <FlatList
               horizontal
-              data={homepageData.offers}
+              data={homepageData.offers.slice(0, 5)}
               keyExtractor={(item) => item.id.toString()}
               showsHorizontalScrollIndicator={false}
               renderItem={({ item }) => {
@@ -216,6 +265,57 @@ export default function HomeScreen() {
                           {item.price} {t('sar')}
                         </Text>
                       </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              }}
+            />
+          </View>
+        )}
+
+        {/* Blog Posts */}
+        {homepageData?.posts && homepageData.posts.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { fontFamily: fonts.bold }]}>
+                {t('latest_blog')}
+              </Text>
+              {/* TODO: Add blog tab/screen */}
+              {/* <TouchableOpacity onPress={() => router.push('/blog')}>
+                <Text style={[styles.sectionLink, { color: themeColor }]}>
+                  {t('view_all')}
+                </Text>
+              </TouchableOpacity> */}
+            </View>
+            <FlatList
+              horizontal
+              data={homepageData.posts.slice(0, 5)}
+              keyExtractor={(item) => item.id.toString()}
+              showsHorizontalScrollIndicator={false}
+              renderItem={({ item }) => {
+                const title = language === 'ar' ? item.title_ar : item.title;
+                const excerpt = language === 'ar' ? item.excerpt_ar : item.excerpt;
+                return (
+                  <TouchableOpacity
+                    style={styles.blogCard}
+                    onPress={() => router.push(`/blog/${item.slug || item.id}`)}
+                  >
+                    {item.image && (
+                      <Image
+                        source={{ uri: item.image }}
+                        style={styles.blogImage}
+                        resizeMode="cover"
+                      />
+                    )}
+                    <View style={styles.blogContent}>
+                      <Text style={styles.blogTitle} numberOfLines={2}>
+                        {title}
+                      </Text>
+                      {excerpt && (
+                        <Text style={styles.blogExcerpt} numberOfLines={3}>
+                          {excerpt}
+                        </Text>
+                      )}
                     </View>
                   </TouchableOpacity>
                 );
@@ -365,5 +465,36 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#0d525a',
+  },
+  blogCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginRight: 12,
+    width: 220,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  blogImage: {
+    width: '100%',
+    height: 140,
+    backgroundColor: '#f0f0f0',
+  },
+  blogContent: {
+    padding: 12,
+  },
+  blogTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 6,
+  },
+  blogExcerpt: {
+    fontSize: 13,
+    color: '#666',
+    lineHeight: 18,
   },
 });

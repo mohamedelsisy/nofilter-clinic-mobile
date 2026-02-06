@@ -144,10 +144,11 @@ export interface Post {
 
 export interface HomepageData {
   sliders: Slider[];
-  featured_services: Service[];
+  services: Service[]; // Backend returns 'services' not 'featured_services'
   doctors: Doctor[];
-  offers: Offer[];
+  offers?: Offer[]; // Optional, may not be in homepage
   posts: Post[];
+  special_offers?: any[]; // Optional special offers
 }
 
 // Appointment Types

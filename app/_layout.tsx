@@ -4,8 +4,13 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { I18nextProvider } from 'react-i18next';
 import { I18nManager } from 'react-native';
+import * as SplashScreen from 'expo-splash-screen';
+import { useFonts } from 'expo-font';
 import i18n from '@/utils/i18n';
 import { useLanguageStore } from '@/store/languageStore';
+
+// Keep the splash screen visible while we fetch resources
+SplashScreen.preventAutoHideAsync();
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component<
@@ -127,6 +132,18 @@ function AppContent() {
   const { language, setLanguage } = useLanguageStore();
   const [isReady, setIsReady] = useState(false);
 
+  // Load Cairo fonts for Arabic
+  const [fontsLoaded, fontError] = useFonts({
+    'Cairo-Regular': require('../assets/fonts/Cairo-Regular.ttf'),
+    'Cairo-Medium': require('../assets/fonts/Cairo-Medium.ttf'),
+    'Cairo-SemiBold': require('../assets/fonts/Cairo-SemiBold.ttf'),
+    'Cairo-Bold': require('../assets/fonts/Cairo-Bold.ttf'),
+  });
+
+  // Log font loading status
+  console.log('📝 Fonts loaded:', fontsLoaded);
+  console.log('❌ Font error:', fontError);
+
   useEffect(() => {
     // Initialize language and RTL
     const initLanguage = async () => {
@@ -143,12 +160,31 @@ function AppContent() {
     initLanguage();
   }, []);
 
-  if (!isReady) {
-    return (
-      <View style={{ flex: 1, backgroundColor: '#0d525a', justifyContent: 'center', alignItems: 'center' }}>
-        <Text style={{ color: '#fff', fontSize: 18 }}>Loading...</Text>
-      </View>
-    );
+  // Hide splash screen when fonts are loaded
+  useEffect(() => {
+    if (fontsLoaded && isReady) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded, isReady]);
+
+  // Show error if fonts failed to load
+  useEffect(() => {
+    if (fontError) {
+      console.error('❌ Font loading error:', fontError);
+      console.error('Font error details:', JSON.stringify(fontError, null, 2));
+      // Still hide splash and show app with default fonts
+      SplashScreen.hideAsync();
+    }
+  }, [fontError]);
+
+  // If fonts failed but app is ready, still show app
+  if ((!fontsLoaded && !fontError) && !isReady) {
+    return null; // Splash screen is visible
+  }
+
+  // If there's a font error but app is ready, proceed without custom fonts
+  if (fontError && isReady) {
+    console.warn('⚠️ App running without Cairo fonts due to loading error');
   }
 
   return (

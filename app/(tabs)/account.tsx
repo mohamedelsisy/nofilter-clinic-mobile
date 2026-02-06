@@ -103,10 +103,20 @@ export default function AccountScreen() {
           
           <TouchableOpacity
             style={[styles.guestButton, { backgroundColor: themeColor }]}
+            onPress={() => router.push('/auth/login' as any)}
+          >
+            <Ionicons name="log-in" size={24} color="#fff" />
+            <Text style={styles.guestButtonText}>{t('login')}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.guestButtonOutline, { borderColor: themeColor }]}
             onPress={() => router.push('/(tabs)/booking')}
           >
-            <Ionicons name="calendar" size={24} color="#fff" />
-            <Text style={styles.guestButtonText}>{t('book_appointment_to_create_account')}</Text>
+            <Ionicons name="calendar" size={22} color={themeColor} />
+            <Text style={[styles.guestButtonOutlineText, { color: themeColor }]}>
+              {t('book_appointment_to_create_account')}
+            </Text>
           </TouchableOpacity>
 
           <View style={styles.guestDivider}>
@@ -272,16 +282,34 @@ const styles = StyleSheet.create({
   guestButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 14,
     paddingHorizontal: 24,
     borderRadius: 10,
-    marginBottom: 24,
+    marginBottom: 16,
+    width: '100%',
   },
   guestButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 10,
+  },
+  guestButtonOutline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 10,
+    borderWidth: 2,
+    marginBottom: 16,
+    width: '100%',
+  },
+  guestButtonOutlineText: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginLeft: 8,
   },
   guestDivider: {
     flexDirection: 'row',
