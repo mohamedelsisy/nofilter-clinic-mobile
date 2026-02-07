@@ -32,13 +32,17 @@ export default function ServiceDetailScreen() {
 
   // Fetch service details
   const {
-    data: service,
+    data: serviceData,
     isLoading,
     error,
     refetch,
   } = useQuery({
     queryKey: ['service', slug],
-    queryFn: () => servicesApi.getService(slug as string),
+    queryFn: async () => {
+      const response = await servicesApi.getService(slug as string);
+      console.log('Service API response:', response);
+      return response;
+    },
     enabled: !!slug,
   });
 
@@ -46,7 +50,7 @@ export default function ServiceDetailScreen() {
     return <LoadingScreen />;
   }
 
-  if (error || !service) {
+  if (error || !serviceData) {
     return (
       <ErrorView
         message={(error as any)?.message || t('service_not_found')}
@@ -55,9 +59,13 @@ export default function ServiceDetailScreen() {
     );
   }
 
+  // Handle nested API response structure: { service: {...}, gallery_images: [], sidebar_services: [] }
+  const service = (serviceData as any)?.service || serviceData;
+  
   const name = (language === 'ar' ? service.name_ar : service.name_en) || service.name || '';
   const description = (language === 'ar' ? service.description_ar : service.description_en) || service.description || '';
   const imageUrl = service.photo || service.image;
+  const galleryImages = (serviceData as any)?.gallery_images || [];
 
   return (
     <>
@@ -71,8 +79,30 @@ export default function ServiceDetailScreen() {
         }}
       />
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        {/* Service Image */}
-        {imageUrl ? (
+        {/* Service Image or Gallery */}
+        {galleryImages.length > 0 ? (
+          <View style={styles.imageContainer}>
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              style={styles.galleryScroll}
+            >
+              {galleryImages.map((img: string, index: number) => (
+                <Image
+                  key={index}
+                  source={{ uri: img }}
+                  style={styles.image}
+                  resizeMode="cover"
+                />
+              ))}
+            </ScrollView>
+            <LinearGradient
+              colors={['transparent', 'rgba(0,0,0,0.7)']}
+              style={styles.imageGradient}
+            />
+          </View>
+        ) : imageUrl ? (
           <View style={styles.imageContainer}>
             <Image
               source={{ uri: imageUrl }}
@@ -205,9 +235,13 @@ const styles = StyleSheet.create({
     height: 300,
     position: 'relative',
   },
-  image: {
+  galleryScroll: {
     width: '100%',
-    height: '100%',
+    height: 300,
+  },
+  image: {
+    width: width,
+    height: 300,
   },
   imageGradient: {
     position: 'absolute',
