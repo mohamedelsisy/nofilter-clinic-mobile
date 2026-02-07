@@ -38,6 +38,11 @@ export default function TabsLayout() {
     >
       <Tabs.Screen
         name="index"
+        listeners={{
+          tabPress: (e) => {
+            console.log('🏠 Home tab pressed');
+          },
+        }}
         options={{
           title: t('home'),
           tabBarIcon: ({ color, size }) => (
@@ -47,6 +52,11 @@ export default function TabsLayout() {
       />
       <Tabs.Screen
         name="services"
+        listeners={{
+          tabPress: (e) => {
+            console.log('🏥 Services tab pressed');
+          },
+        }}
         options={{
           title: t('services'),
           tabBarIcon: ({ color, size }) => (
@@ -56,6 +66,11 @@ export default function TabsLayout() {
       />
       <Tabs.Screen
         name="offers"
+        listeners={{
+          tabPress: (e) => {
+            console.log('🎁 Offers tab pressed');
+          },
+        }}
         options={{
           title: t('offers'),
           tabBarIcon: ({ color, size }) => (
@@ -65,6 +80,11 @@ export default function TabsLayout() {
       />
       <Tabs.Screen
         name="booking"
+        listeners={{
+          tabPress: (e) => {
+            console.log('📅 Booking tab pressed');
+          },
+        }}
         options={{
           title: t('booking'),
           tabBarIcon: ({ color, size }) => (
@@ -74,6 +94,11 @@ export default function TabsLayout() {
       />
       <Tabs.Screen
         name="account"
+        listeners={{
+          tabPress: (e) => {
+            console.log('👤 Account tab pressed');
+          },
+        }}
         options={{
           title: t('account'),
           tabBarIcon: ({ color, size }) => (

@@ -211,7 +211,16 @@ export default function ServiceDetailScreen() {
           {/* Book Now Button */}
           <TouchableOpacity
             style={[styles.bookButton, { backgroundColor: themeColor }]}
-            onPress={() => router.push('/(tabs)/booking')}
+            onPress={() => {
+              console.log('📅 Book Now button clicked');
+              console.log('🔗 Attempting to navigate to: /(tabs)/booking');
+              try {
+                router.push('/(tabs)/booking');
+                console.log('✅ Navigation initiated');
+              } catch (error) {
+                console.error('❌ Navigation error:', error);
+              }
+            }}
             activeOpacity={0.9}
           >
             <Ionicons name="calendar" size={24} color="#fff" />
