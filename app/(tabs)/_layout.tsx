@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useConfigStore } from '@/store/configStore';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +8,8 @@ import { Ionicons } from '@expo/vector-icons';
 export default function TabsLayout() {
   const { t } = useTranslation();
   const themeColor = useConfigStore((state) => state.getThemeColor());
+
+  console.log('🔧 TabsLayout rendering with theme color:', themeColor);
 
   return (
     <Tabs

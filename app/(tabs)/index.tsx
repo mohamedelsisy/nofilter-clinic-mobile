@@ -483,7 +483,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 32,
+    paddingBottom: 100, // Extra padding to ensure content doesn't overlap tab bar
   },
   sliderContainer: {
     height: 240,
