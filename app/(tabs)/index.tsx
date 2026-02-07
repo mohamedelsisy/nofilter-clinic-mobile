@@ -297,6 +297,7 @@ export default function HomeScreen() {
               data={homepageData.doctors}
               keyExtractor={(item) => item.id.toString()}
               showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.doctorsContainer}
               renderItem={({ item }) => (
                 <DoctorCard
                   doctor={item}
@@ -564,6 +565,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   servicesContainer: {
+    paddingLeft: 16,
+    paddingRight: 8,
+  },
+  doctorsContainer: {
     paddingLeft: 16,
     paddingRight: 8,
   },
