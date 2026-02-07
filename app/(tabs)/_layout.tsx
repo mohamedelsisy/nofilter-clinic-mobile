@@ -2,31 +2,8 @@ import React from 'react';
 import { Tabs } from 'expo-router';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { useQuery } from '@tanstack/react-query';
 import { useConfigStore } from '@/store/configStore';
-import { useAuthStore } from '@/store/authStore';
 import { Ionicons } from '@expo/vector-icons';
-import { getCartCount, cartKeys } from '@/api/endpoints/cart';
-
-function CartBadge() {
-  const { token } = useAuthStore();
-  
-  const { data: count } = useQuery({
-    queryKey: cartKeys.count(),
-    queryFn: getCartCount,
-    enabled: !!token,
-    refetchOnWindowFocus: true,
-    refetchOnMount: true,
-  });
-
-  if (!count || count === 0) return null;
-
-  return (
-    <View style={styles.badge}>
-      <Text style={styles.badgeText}>{count > 9 ? '9+' : count}</Text>
-    </View>
-  );
-}
 
 export default function TabsLayout() {
   const { t } = useTranslation();
@@ -39,9 +16,16 @@ export default function TabsLayout() {
         tabBarActiveTintColor: themeColor,
         tabBarInactiveTintColor: '#999',
         tabBarStyle: {
-          height: 60,
-          paddingBottom: 8,
+          height: 65,
+          paddingBottom: 10,
           paddingTop: 8,
+          backgroundColor: '#fff',
+          borderTopWidth: 1,
+          borderTopColor: '#f0f0f0',
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '600',
         },
       }}
     >
@@ -73,27 +57,6 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="special-offers"
-        options={{
-          title: t('special_offers_tab'),
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="flash" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="cart"
-        options={{
-          title: t('cart'),
-          tabBarIcon: ({ color, size }) => (
-            <View>
-              <Ionicons name="cart" size={size} color={color} />
-              <CartBadge />
-            </View>
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="booking"
         options={{
           title: t('booking'),
@@ -111,26 +74,20 @@ export default function TabsLayout() {
           ),
         }}
       />
+      
+      {/* Hidden tabs - accessible via navigation but not in bottom bar */}
+      <Tabs.Screen
+        name="special-offers"
+        options={{
+          href: null, // Hide from tab bar
+        }}
+      />
+      <Tabs.Screen
+        name="cart"
+        options={{
+          href: null, // Hide from tab bar
+        }}
+      />
     </Tabs>
   );
 }
-
-const styles = StyleSheet.create({
-  badge: {
-    position: 'absolute',
-    right: -6,
-    top: -4,
-    backgroundColor: '#f44336',
-    borderRadius: 10,
-    minWidth: 18,
-    height: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 4,
-  },
-  badgeText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-});
