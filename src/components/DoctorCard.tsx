@@ -18,9 +18,12 @@ export const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onPress }) => {
   const themeColor = getThemeColor();
   const fonts = useFontFamily();
 
-  const name = language === 'ar' ? doctor.name_ar : doctor.name;
-  const title = language === 'ar' ? doctor.title_ar : doctor.title;
-  const bio = language === 'ar' ? doctor.bio_ar : doctor.bio;
+  // Handle both API formats
+  const name = doctor.full_name || (language === 'ar' ? doctor.name_ar : doctor.name) || '';
+  const title = (language === 'ar' ? doctor.title_ar : doctor.title) || 
+                (language === 'ar' ? doctor.specialization_ar : doctor.specialization) || '';
+  const bio = (language === 'ar' ? doctor.bio_ar : doctor.bio_en) || doctor.bio || '';
+  const imageUrl = doctor.photo || doctor.image;
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.9}>
@@ -30,9 +33,9 @@ export const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onPress }) => {
       >
         {/* Doctor Image with Badge */}
         <View style={styles.imageContainer}>
-          {doctor.image ? (
+          {imageUrl ? (
             <Image
-              source={{ uri: doctor.image }}
+              source={{ uri: imageUrl }}
               style={styles.image}
               resizeMode="cover"
             />

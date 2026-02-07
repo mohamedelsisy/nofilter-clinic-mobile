@@ -20,15 +20,16 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({ service, onPress }) =>
   const themeColor = getThemeColor();
   const fonts = useFontFamily();
 
-  const name = language === 'ar' ? service.name_ar : service.name;
-  const description = language === 'ar' ? service.description_ar : service.description;
+  const name = (language === 'ar' ? service.name_ar : service.name_en) || service.name || '';
+  const description = (language === 'ar' ? service.description_ar : service.description_en) || service.description || '';
+  const imageUrl = service.photo || service.image;
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.9}>
-      {service.image ? (
+      {imageUrl ? (
         <>
           <Image
-            source={{ uri: service.image }}
+            source={{ uri: imageUrl }}
             style={styles.image}
             resizeMode="cover"
           />

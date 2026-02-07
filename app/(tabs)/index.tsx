@@ -199,8 +199,9 @@ export default function HomeScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.servicesContainer}
               renderItem={({ item }) => {
-                const name = language === 'ar' ? item.name_ar : item.name;
-                const description = language === 'ar' ? item.description_ar : item.description;
+                const name = (language === 'ar' ? item.name_ar : item.name_en) || item.name || '';
+                const description = (language === 'ar' ? item.description_ar : item.description_en) || item.description || '';
+                const imageUrl = item.photo || item.image;
                 return (
                   <TouchableOpacity
                     style={styles.serviceCard}
@@ -209,9 +210,9 @@ export default function HomeScreen() {
                       router.push(`/service/${identifier}`);
                     }}
                   >
-                    {item.image ? (
+                    {imageUrl ? (
                       <Image
-                        source={{ uri: item.image }}
+                        source={{ uri: imageUrl }}
                         style={styles.serviceImage}
                         resizeMode="cover"
                       />

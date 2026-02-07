@@ -73,14 +73,19 @@ export interface Slider {
 export interface Service {
   id: number;
   slug?: string;
-  name: string;
+  name?: string; // For compatibility
+  name_en?: string;
   name_ar: string;
   description?: string;
+  description_en?: string;
   description_ar?: string;
-  image?: string;
+  photo?: string; // Main image field from API
+  image?: string; // For compatibility
+  icon?: string;
   price?: number;
   duration?: number;
   category_id?: number;
+  is_active?: boolean;
   category?: {
     id: number;
     name: string;
@@ -92,15 +97,24 @@ export interface Service {
 
 export interface Doctor {
   id: number;
-  name: string;
-  name_ar: string;
-  title: string;
-  title_ar: string;
-  bio?: string;
+  full_name: string;
+  name?: string; // For compatibility
+  name_ar?: string; // For compatibility
+  title?: string; // For compatibility
+  title_ar?: string; // For compatibility
+  bio_en?: string;
   bio_ar?: string;
-  image?: string;
+  bio?: string; // For compatibility
+  education_en?: string;
+  education_ar?: string;
+  experience_en?: string;
+  experience_ar?: string;
+  photo?: string; // Main image field from API
+  image?: string; // For compatibility
   specialization?: string;
   specialization_ar?: string;
+  department_id?: number;
+  user_id?: number;
 }
 
 export interface Offer {
