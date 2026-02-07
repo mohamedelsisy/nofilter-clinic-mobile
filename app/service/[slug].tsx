@@ -2,68 +2,45 @@ import React from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
+  StyleSheet,
   Image,
   TouchableOpacity,
   Dimensions,
 } from 'react-native';
-import { useLocalSearchParams, router } from 'expo-router';
+import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useLanguageStore } from '@/store/languageStore';
 import { useConfigStore } from '@/store/configStore';
-import { useBookingStore } from '@/store/bookingStore';
-import { getServiceBySlug, servicesKeys } from '@/api/endpoints/services';
-import { useTField } from '@/utils/localization';
+import { servicesApi } from '@/api/endpoints';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { ErrorView } from '@/components/ErrorView';
-import { ShareButton } from '@/components/ShareButton';
-import { ShareLinks } from '@/utils/deepLinking';
+import { useFontFamily } from '@/utils/fonts';
 
 const { width } = Dimensions.get('window');
 
 export default function ServiceDetailScreen() {
-  const { slug } = useLocalSearchParams<{ slug: string }>();
+  const { slug } = useLocalSearchParams();
   const { t } = useTranslation();
-  const tField = useTField();
-  const themeColor = useConfigStore((state) => state.getThemeColor());
-  const { setPreselectedService } = useBookingStore();
+  const { language } = useLanguageStore();
+  const { getThemeColor } = useConfigStore();
+  const themeColor = getThemeColor();
+  const fonts = useFontFamily();
 
+  // Fetch service details
   const {
     data: service,
     isLoading,
     error,
     refetch,
   } = useQuery({
-    queryKey: servicesKeys.detail(slug as string),
-    queryFn: () => getServiceBySlug(slug as string),
+    queryKey: ['service', slug],
+    queryFn: () => servicesApi.getService(slug as string),
     enabled: !!slug,
   });
-
-  const handleBookAppointment = () => {
-    // Store the service for prefilling in booking flow
-    if (service) {
-      setPreselectedService({
-        id: service.id,
-        slug: service.slug,
-        title: service.title,
-        title_ar: service.title_ar,
-        title_en: service.title_en,
-        description: service.description,
-        description_ar: service.description_ar,
-        description_en: service.description_en,
-        image: service.image,
-        price: service.price,
-        duration: service.duration,
-        category_id: service.category_id,
-        is_featured: service.is_featured,
-      });
-    }
-    
-    // Navigate to booking flow
-    router.push('/(tabs)/booking');
-  };
 
   if (isLoading) {
     return <LoadingScreen />;
@@ -78,141 +55,122 @@ export default function ServiceDetailScreen() {
     );
   }
 
-  const title = tField(service.title_ar, service.title_en);
-  const description = tField(service.description_ar, service.description_en);
-  const content = tField(service.content_ar, service.content_en);
-  const categoryName = service.category
-    ? tField(service.category.name_ar, service.category.name_en)
-    : null;
+  const name = (language === 'ar' ? service.name_ar : service.name_en) || service.name || '';
+  const description = (language === 'ar' ? service.description_ar : service.description_en) || service.description || '';
+  const imageUrl = service.photo || service.image;
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: themeColor }]}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Ionicons name="arrow-back" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>
-          {title}
-        </Text>
-        <View style={styles.headerRight}>
-          <ShareButton
-            onShare={() => ShareLinks.service(slug as string, title)}
-            color="#fff"
-          />
-        </View>
-      </View>
-
-      <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Service Image/Gallery */}
-        {service.images && service.images.length > 0 ? (
-          <View style={styles.imageGallery}>
-            <ScrollView
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-            >
-              {service.images.map((img, index) => (
-                <Image
-                  key={index}
-                  source={{ uri: img }}
-                  style={styles.image}
-                  resizeMode="cover"
-                />
-              ))}
-            </ScrollView>
+    <>
+      <Stack.Screen
+        options={{
+          title: name,
+          headerShown: true,
+          headerStyle: { backgroundColor: themeColor },
+          headerTintColor: '#fff',
+          headerTitleStyle: { fontFamily: fonts.bold },
+        }}
+      />
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        {/* Service Image */}
+        {imageUrl ? (
+          <View style={styles.imageContainer}>
+            <Image
+              source={{ uri: imageUrl }}
+              style={styles.image}
+              resizeMode="cover"
+            />
+            <LinearGradient
+              colors={['transparent', 'rgba(0,0,0,0.7)']}
+              style={styles.imageGradient}
+            />
           </View>
-        ) : service.image ? (
-          <Image
-            source={{ uri: service.image }}
-            style={styles.image}
-            resizeMode="cover"
-          />
-        ) : null}
+        ) : (
+          <LinearGradient
+            colors={[themeColor, '#0a3d43']}
+            style={styles.imagePlaceholder}
+          >
+            <Ionicons name="medical" size={80} color="#fff" />
+          </LinearGradient>
+        )}
 
         {/* Service Info */}
-        <View style={styles.infoContainer}>
-          <Text style={styles.name}>{title}</Text>
+        <View style={styles.content}>
+          {/* Service Name */}
+          <Text style={[styles.name, { fontFamily: fonts.bold }]}>{name}</Text>
 
-          {/* Category */}
-          {categoryName && (
-            <View style={styles.categoryContainer}>
-              <Ionicons name="folder-outline" size={16} color="#666" />
-              <Text style={styles.categoryText}>{categoryName}</Text>
+          {/* Price & Duration */}
+          {(service.price || service.duration) && (
+            <View style={styles.infoRow}>
+              {service.price && (
+                <View style={[styles.infoCard, { backgroundColor: themeColor }]}>
+                  <Ionicons name="cash-outline" size={24} color="#fff" />
+                  <Text style={styles.infoLabel}>{t('price')}</Text>
+                  <Text style={styles.infoValue}>
+                    {service.price} {t('sar')}
+                  </Text>
+                </View>
+              )}
+              {service.duration && (
+                <View style={[styles.infoCard, { backgroundColor: '#666' }]}>
+                  <Ionicons name="time-outline" size={24} color="#fff" />
+                  <Text style={styles.infoLabel}>{t('duration')}</Text>
+                  <Text style={styles.infoValue}>
+                    {service.duration} {t('minutes')}
+                  </Text>
+                </View>
+              )}
             </View>
           )}
 
-          {/* Price and Duration */}
-          <View style={styles.metaContainer}>
-            {service.price && (
-              <View style={styles.metaItem}>
-                <Ionicons name="cash-outline" size={20} color={themeColor} />
-                <Text style={[styles.metaLabel, { color: themeColor }]}>
-                  {t('price')}:
-                </Text>
-                <Text style={styles.metaValue}>
-                  {service.price} {t('sar')}
-                </Text>
-              </View>
-            )}
-
-            {service.duration && (
-              <View style={styles.metaItem}>
-                <Ionicons name="time-outline" size={20} color={themeColor} />
-                <Text style={[styles.metaLabel, { color: themeColor }]}>
-                  {t('duration')}:
-                </Text>
-                <Text style={styles.metaValue}>
-                  {service.duration} {t('minutes')}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          {/* Short Description */}
+          {/* Description */}
           {description && (
             <View style={styles.section}>
-              <Text style={styles.description}>{description}</Text>
-            </View>
-          )}
-
-          {/* Full Content */}
-          {content && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>{t('description')}</Text>
-              <Text style={styles.contentText}>{content}</Text>
+              <View style={styles.sectionHeader}>
+                <Ionicons name="information-circle" size={24} color={themeColor} />
+                <Text style={[styles.sectionTitle, { fontFamily: fonts.bold }]}>
+                  {t('description')}
+                </Text>
+              </View>
+              <Text style={[styles.description, { fontFamily: fonts.regular }]}>
+                {description}
+              </Text>
             </View>
           )}
 
           {/* Sub Services */}
           {service.sub_services && service.sub_services.length > 0 && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>{t('sub_services')}</Text>
-              {service.sub_services.map((subService) => {
-                const subName = tField(subService.name_ar, subService.name_en);
-                const subDesc = tField(subService.description_ar, subService.description_en);
-                
+              <View style={styles.sectionHeader}>
+                <Ionicons name="list" size={24} color={themeColor} />
+                <Text style={[styles.sectionTitle, { fontFamily: fonts.bold }]}>
+                  {t('sub_services')}
+                </Text>
+              </View>
+              {service.sub_services.map((subService, index) => {
+                const subName = (language === 'ar' ? subService.name_ar : subService.name_en) || subService.name || '';
+                const subDesc = (language === 'ar' ? subService.description_ar : subService.description_en) || subService.description || '';
                 return (
                   <View key={subService.id} style={styles.subServiceCard}>
                     <View style={styles.subServiceHeader}>
-                      <Text style={styles.subServiceName}>{subName}</Text>
-                      {subService.price && (
-                        <Text style={styles.subServicePrice}>
-                          {subService.price} {t('sar')}
-                        </Text>
-                      )}
+                      <View style={[styles.subServiceNumber, { backgroundColor: themeColor }]}>
+                        <Text style={styles.subServiceNumberText}>{index + 1}</Text>
+                      </View>
+                      <Text style={[styles.subServiceName, { fontFamily: fonts.bold }]}>
+                        {subName}
+                      </Text>
                     </View>
                     {subDesc && (
-                      <Text style={styles.subServiceDesc}>{subDesc}</Text>
-                    )}
-                    {subService.duration && (
-                      <Text style={styles.subServiceDuration}>
-                        <Ionicons name="time-outline" size={14} color="#666" />
-                        {' '}{subService.duration} {t('minutes')}
+                      <Text style={[styles.subServiceDesc, { fontFamily: fonts.regular }]}>
+                        {subDesc}
                       </Text>
+                    )}
+                    {subService.price && (
+                      <View style={styles.subServicePrice}>
+                        <Ionicons name="cash" size={16} color={themeColor} />
+                        <Text style={[styles.subServicePriceText, { color: themeColor }]}>
+                          {subService.price} {t('sar')}
+                        </Text>
+                      </View>
                     )}
                   </View>
                 );
@@ -220,240 +178,175 @@ export default function ServiceDetailScreen() {
             </View>
           )}
 
-          {/* Related Services */}
-          {service.related_services && service.related_services.length > 0 && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>{t('related_services')}</Text>
-              {service.related_services.map((relatedService) => {
-                const relatedTitle = tField(relatedService.title_ar, relatedService.title_en);
-                
-                return (
-                  <TouchableOpacity
-                    key={relatedService.id}
-                    style={styles.relatedCard}
-                    onPress={() => router.push(`/service/${relatedService.slug}`)}
-                  >
-                    {relatedService.image && (
-                      <Image
-                        source={{ uri: relatedService.image }}
-                        style={styles.relatedImage}
-                        resizeMode="cover"
-                      />
-                    )}
-                    <View style={styles.relatedContent}>
-                      <Text style={styles.relatedTitle} numberOfLines={2}>
-                        {relatedTitle}
-                      </Text>
-                      {relatedService.price && (
-                        <Text style={styles.relatedPrice}>
-                          {relatedService.price} {t('sar')}
-                        </Text>
-                      )}
-                    </View>
-                    <Ionicons name="chevron-forward" size={20} color="#ccc" />
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          )}
+          {/* Book Now Button */}
+          <TouchableOpacity
+            style={[styles.bookButton, { backgroundColor: themeColor }]}
+            onPress={() => router.push('/(tabs)/booking')}
+            activeOpacity={0.9}
+          >
+            <Ionicons name="calendar" size={24} color="#fff" />
+            <Text style={[styles.bookButtonText, { fontFamily: fonts.bold }]}>
+              {t('book_now')}
+            </Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
-
-      {/* Book Now Button */}
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={[styles.bookButton, { backgroundColor: themeColor }]}
-          onPress={handleBookAppointment}
-        >
-          <Ionicons name="calendar" size={20} color="#fff" />
-          <Text style={styles.bookButtonText}>{t('book_appointment')}</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f8f9fa',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 50,
-    paddingBottom: 16,
-    paddingHorizontal: 16,
+  imageContainer: {
+    width: '100%',
+    height: 300,
+    position: 'relative',
   },
-  backButton: {
-    width: 40,
-    height: 40,
+  image: {
+    width: '100%',
+    height: '100%',
+  },
+  imageGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '50%',
+  },
+  imagePlaceholder: {
+    width: '100%',
+    height: 300,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  headerTitle: {
-    flex: 1,
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#fff',
-    textAlign: 'center',
-    marginHorizontal: 8,
-  },
-  headerRight: {
-    width: 40,
-  },
-  scrollContent: {
-    flex: 1,
-  },
-  imageGallery: {
-    width: width,
-    height: width * 0.6,
-  },
-  image: {
-    width: width,
-    height: width * 0.6,
-    backgroundColor: '#f0f0f0',
-  },
-  infoContainer: {
-    padding: 16,
+  content: {
+    padding: 20,
   },
   name: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '700',
-    color: '#333',
-    marginBottom: 12,
+    color: '#1a1a1a',
+    marginBottom: 20,
+    lineHeight: 36,
   },
-  categoryContainer: {
+  infoRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  categoryText: {
-    fontSize: 14,
-    color: '#666',
-    marginLeft: 6,
-  },
-  metaContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     marginBottom: 24,
+    gap: 12,
   },
-  metaItem: {
-    flexDirection: 'row',
+  infoCard: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 16,
     alignItems: 'center',
-    marginRight: 24,
-    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
   },
-  metaLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginLeft: 6,
-    marginRight: 4,
+  infoLabel: {
+    color: '#fff',
+    fontSize: 12,
+    marginTop: 8,
+    opacity: 0.9,
   },
-  metaValue: {
-    fontSize: 16,
+  infoValue: {
+    color: '#fff',
+    fontSize: 18,
     fontWeight: '700',
-    color: '#333',
+    marginTop: 4,
   },
   section: {
     marginBottom: 24,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
-    color: '#333',
-    marginBottom: 12,
+    color: '#1a1a1a',
+    marginLeft: 8,
   },
   description: {
     fontSize: 16,
-    lineHeight: 24,
-    color: '#666',
-  },
-  contentText: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: '#666',
+    color: '#444',
+    lineHeight: 26,
   },
   subServiceCard: {
-    backgroundColor: '#f9f9f9',
-    borderRadius: 8,
-    padding: 12,
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 16,
     marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
   },
   subServiceHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
   },
-  subServiceName: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+  subServiceNumber: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
-  subServicePrice: {
+  subServiceNumberText: {
+    color: '#fff',
     fontSize: 16,
     fontWeight: '700',
-    color: '#0d525a',
-    marginLeft: 8,
+  },
+  subServiceName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    flex: 1,
   },
   subServiceDesc: {
     fontSize: 14,
     color: '#666',
-    marginBottom: 6,
+    lineHeight: 22,
+    marginBottom: 8,
   },
-  subServiceDuration: {
-    fontSize: 12,
-    color: '#666',
-  },
-  relatedCard: {
+  subServicePrice: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f9f9f9',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
   },
-  relatedImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 6,
-    backgroundColor: '#f0f0f0',
-    marginRight: 12,
-  },
-  relatedContent: {
-    flex: 1,
-  },
-  relatedTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
-  },
-  relatedPrice: {
-    fontSize: 14,
+  subServicePriceText: {
+    fontSize: 16,
     fontWeight: '700',
-    color: '#0d525a',
-  },
-  footer: {
-    padding: 16,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
+    marginLeft: 6,
   },
   bookButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 8,
+    padding: 18,
+    borderRadius: 16,
+    marginTop: 12,
+    marginBottom: 32,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   bookButtonText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
+    fontSize: 18,
+    fontWeight: '700',
+    marginLeft: 12,
   },
 });
