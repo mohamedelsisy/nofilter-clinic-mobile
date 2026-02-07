@@ -3,13 +3,21 @@
 export interface ServiceListItem {
   id: number;
   slug: string;
-  title: string;
-  title_ar: string;
-  title_en: string;
+  // API returns name_* fields
+  name?: string;
+  name_ar?: string;
+  name_en?: string;
+  // Keep title_* for backward compatibility
+  title?: string;
+  title_ar?: string;
+  title_en?: string;
   description?: string;
   description_ar?: string;
   description_en?: string;
+  // API returns photo field
+  photo?: string;
   image?: string;
+  icon?: string;
   price?: number;
   duration?: number;
   category_id?: number;

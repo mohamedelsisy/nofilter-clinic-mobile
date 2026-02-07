@@ -83,8 +83,14 @@ export default function ServicesScreen() {
 
   // Render service card
   const renderServiceCard = ({ item }: { item: ServiceListItem }) => {
-    const title = tField(item.title_ar, item.title_en);
+    // API returns name_* fields, but also support title_* for backward compatibility
+    const title = tField(
+      item.name_ar || item.title_ar, 
+      item.name_en || item.title_en
+    ) || item.name || item.title || '';
     const description = tField(item.description_ar, item.description_en);
+    // API returns photo field
+    const imageUrl = item.photo || item.image || item.icon;
 
     return (
       <TouchableOpacity
@@ -92,9 +98,9 @@ export default function ServicesScreen() {
         onPress={() => router.push(`/service/${item.slug}`)}
         activeOpacity={0.7}
       >
-        {item.image && (
+        {imageUrl && (
           <Image
-            source={{ uri: item.image }}
+            source={{ uri: imageUrl }}
             style={styles.cardImage}
             resizeMode="cover"
           />
