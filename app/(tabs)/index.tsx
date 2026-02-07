@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -8,10 +8,12 @@ import {
   TouchableOpacity,
   Dimensions,
   FlatList,
+  Animated,
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLanguageStore } from '@/store/languageStore';
 import { useConfigStore } from '@/store/configStore';
 import { siteApi } from '@/api/endpoints';
@@ -25,6 +27,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFontFamily } from '@/utils/fonts';
 
 const { width } = Dimensions.get('window');
+const SLIDER_WIDTH = width;
+const ITEM_WIDTH = width - 40;
 
 export default function HomeScreen() {
   const { t } = useTranslation();
@@ -32,6 +36,8 @@ export default function HomeScreen() {
   const { settings, setSettings, getThemeColor } = useConfigStore();
   const themeColor = getThemeColor();
   const fonts = useFontFamily();
+  const [activeSlide, setActiveSlide] = useState(0);
+  const scrollX = useRef(new Animated.Value(0)).current;
 
   // Fetch settings
   const { data: settingsData, isLoading: isLoadingSettings } = useQuery({
@@ -104,18 +110,33 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Sliders */}
+      <ScrollView 
+        style={styles.content} 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Enhanced Sliders with Pagination */}
         {homepageData?.sliders && homepageData.sliders.length > 0 && (
           <View style={styles.sliderContainer}>
-            <FlatList
+            <Animated.FlatList
               horizontal
               data={homepageData.sliders}
               keyExtractor={(item) => item.id.toString()}
               showsHorizontalScrollIndicator={false}
               pagingEnabled
-              snapToInterval={width - 32}
+              snapToInterval={ITEM_WIDTH + 20}
               decelerationRate="fast"
+              bounces={false}
+              onScroll={Animated.event(
+                [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+                { useNativeDriver: false }
+              )}
+              onMomentumScrollEnd={(event) => {
+                const index = Math.round(
+                  event.nativeEvent.contentOffset.x / (ITEM_WIDTH + 20)
+                );
+                setActiveSlide(index);
+              }}
               renderItem={({ item }) => {
                 const title = language === 'ar' ? item.title_ar : item.title;
                 return (
@@ -125,41 +146,102 @@ export default function HomeScreen() {
                       style={styles.sliderImage}
                       resizeMode="cover"
                     />
-                    {title && (
-                      <View style={styles.sliderOverlay}>
-                        <Text style={styles.sliderTitle}>{title}</Text>
-                      </View>
-                    )}
+                    <LinearGradient
+                      colors={['transparent', 'rgba(0,0,0,0.8)']}
+                      style={styles.sliderGradient}
+                    >
+                      {title && (
+                        <Text style={[styles.sliderTitle, { fontFamily: fonts.bold }]}>
+                          {title}
+                        </Text>
+                      )}
+                    </LinearGradient>
                   </View>
                 );
               }}
             />
+            {/* Pagination Dots */}
+            <View style={styles.pagination}>
+              {homepageData.sliders.map((_, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.paginationDot,
+                    index === activeSlide && styles.paginationDotActive,
+                    index === activeSlide && { backgroundColor: themeColor },
+                  ]}
+                />
+              ))}
+            </View>
           </View>
         )}
 
-        {/* Services Section */}
+        {/* Enhanced Services Section */}
         {homepageData?.services && homepageData.services.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { fontFamily: fonts.bold }]}>
-                {t('our_services')}
-              </Text>
+              <View style={styles.sectionTitleContainer}>
+                <Ionicons name="medkit" size={24} color={themeColor} />
+                <Text style={[styles.sectionTitle, { fontFamily: fonts.bold, marginLeft: 8 }]}>
+                  {t('our_services')}
+                </Text>
+              </View>
               <TouchableOpacity onPress={() => router.push('/(tabs)/services')}>
                 <Text style={[styles.sectionLink, { color: themeColor }]}>
-                  {t('view_all')}
+                  {t('view_all')} →
                 </Text>
               </TouchableOpacity>
             </View>
-            {homepageData.services.slice(0, 4).map((service) => (
-              <ServiceCard
-                key={service.id}
-                service={service}
-                onPress={() => {
-                  const identifier = service.slug || service.id.toString();
-                  router.push(`/service/${identifier}`);
-                }}
-              />
-            ))}
+            <FlatList
+              horizontal
+              data={homepageData.services}
+              keyExtractor={(item) => item.id.toString()}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.servicesContainer}
+              renderItem={({ item }) => {
+                const name = language === 'ar' ? item.name_ar : item.name;
+                const description = language === 'ar' ? item.description_ar : item.description;
+                return (
+                  <TouchableOpacity
+                    style={styles.serviceCard}
+                    onPress={() => {
+                      const identifier = item.slug || item.id.toString();
+                      router.push(`/service/${identifier}`);
+                    }}
+                  >
+                    {item.image ? (
+                      <Image
+                        source={{ uri: item.image }}
+                        style={styles.serviceImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <LinearGradient
+                        colors={[themeColor, '#0a3d43']}
+                        style={styles.serviceImagePlaceholder}
+                      >
+                        <Ionicons name="medical" size={40} color="#fff" />
+                      </LinearGradient>
+                    )}
+                    <LinearGradient
+                      colors={['transparent', 'rgba(0,0,0,0.6)']}
+                      style={styles.serviceOverlay}
+                    >
+                      <Text style={[styles.serviceName, { fontFamily: fonts.bold }]} numberOfLines={2}>
+                        {name}
+                      </Text>
+                      {item.price && (
+                        <View style={styles.servicePriceTag}>
+                          <Text style={styles.servicePriceText}>
+                            {item.price} {t('sar')}
+                          </Text>
+                        </View>
+                      )}
+                    </LinearGradient>
+                  </TouchableOpacity>
+                );
+              }}
+            />
           </View>
         )}
 
@@ -167,12 +249,15 @@ export default function HomeScreen() {
         {specialOffersData?.data && specialOffersData.data.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { fontFamily: fonts.bold }]}>
-                {t('special_offers')}
-              </Text>
+              <View style={styles.sectionTitleContainer}>
+                <Ionicons name="pricetag" size={24} color={themeColor} />
+                <Text style={[styles.sectionTitle, { fontFamily: fonts.bold, marginLeft: 8 }]}>
+                  {t('special_offers')}
+                </Text>
+              </View>
               <TouchableOpacity onPress={() => router.push('/(tabs)/special-offers')}>
                 <Text style={[styles.sectionLink, { color: themeColor }]}>
-                  {t('view_all')}
+                  {t('view_all')} →
                 </Text>
               </TouchableOpacity>
             </View>
@@ -195,12 +280,15 @@ export default function HomeScreen() {
         {homepageData?.doctors && homepageData.doctors.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { fontFamily: fonts.bold }]}>
-                {t('our_doctors')}
-              </Text>
+              <View style={styles.sectionTitleContainer}>
+                <Ionicons name="people" size={24} color={themeColor} />
+                <Text style={[styles.sectionTitle, { fontFamily: fonts.bold, marginLeft: 8 }]}>
+                  {t('our_doctors')}
+                </Text>
+              </View>
               <TouchableOpacity>
                 <Text style={[styles.sectionLink, { color: themeColor }]}>
-                  {t('view_all')}
+                  {t('view_all')} →
                 </Text>
               </TouchableOpacity>
             </View>
@@ -223,12 +311,15 @@ export default function HomeScreen() {
         {homepageData?.offers && homepageData.offers.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { fontFamily: fonts.bold }]}>
-                {t('latest_offers')}
-              </Text>
+              <View style={styles.sectionTitleContainer}>
+                <Ionicons name="gift" size={24} color={themeColor} />
+                <Text style={[styles.sectionTitle, { fontFamily: fonts.bold, marginLeft: 8 }]}>
+                  {t('latest_offers')}
+                </Text>
+              </View>
               <TouchableOpacity onPress={() => router.push('/(tabs)/offers')}>
                 <Text style={[styles.sectionLink, { color: themeColor }]}>
-                  {t('view_all')}
+                  {t('view_all')} →
                 </Text>
               </TouchableOpacity>
             </View>
@@ -277,13 +368,16 @@ export default function HomeScreen() {
         {homepageData?.posts && homepageData.posts.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { fontFamily: fonts.bold }]}>
-                {t('latest_blog')}
-              </Text>
+              <View style={styles.sectionTitleContainer}>
+                <Ionicons name="newspaper" size={24} color={themeColor} />
+                <Text style={[styles.sectionTitle, { fontFamily: fonts.bold, marginLeft: 8 }]}>
+                  {t('latest_blog')}
+                </Text>
+              </View>
               {/* TODO: Add blog tab/screen */}
               {/* <TouchableOpacity onPress={() => router.push('/blog')}>
                 <Text style={[styles.sectionLink, { color: themeColor }]}>
-                  {t('view_all')}
+                  {t('view_all')} →
                 </Text>
               </TouchableOpacity> */}
             </View>
@@ -331,7 +425,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f8f9fa',
   },
   header: {
     paddingTop: 50,
@@ -351,24 +445,31 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 25,
     marginRight: 12,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.3)',
   },
   headerText: {
     flex: 1,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
     color: '#fff',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   headerSubtitle: {
     fontSize: 14,
     color: '#fff',
-    opacity: 0.9,
+    opacity: 0.95,
   },
   languageButton: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 8,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 20,
   },
   languageText: {
     color: '#fff',
@@ -379,122 +480,217 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
+  scrollContent: {
+    paddingBottom: 32,
+  },
   sliderContainer: {
-    height: 200,
+    height: 240,
     marginTop: 16,
+    marginBottom: 8,
   },
   sliderItem: {
-    width: width - 32,
-    marginHorizontal: 16,
-    borderRadius: 12,
+    width: ITEM_WIDTH,
+    height: 220,
+    marginHorizontal: 10,
+    marginLeft: 20,
+    borderRadius: 16,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   sliderImage: {
     width: '100%',
     height: '100%',
   },
-  sliderOverlay: {
+  sliderGradient: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    padding: 12,
+    height: '50%',
+    justifyContent: 'flex-end',
+    padding: 16,
   },
   sliderTitle: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
+  pagination: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  paginationDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#ccc',
+    marginHorizontal: 4,
+  },
+  paginationDotActive: {
+    width: 24,
+    height: 8,
+    borderRadius: 4,
   },
   section: {
     marginTop: 24,
-    paddingHorizontal: 16,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
+    paddingHorizontal: 16,
+  },
+  sectionTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
-    color: '#333',
+    color: '#1a1a1a',
   },
   sectionLink: {
     fontSize: 14,
     fontWeight: '600',
   },
+  servicesContainer: {
+    paddingLeft: 16,
+    paddingRight: 8,
+  },
+  serviceCard: {
+    width: 280,
+    height: 180,
+    marginRight: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
+    backgroundColor: '#fff',
+  },
+  serviceImage: {
+    width: '100%',
+    height: '100%',
+  },
+  serviceImagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  serviceOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 16,
+    minHeight: 80,
+    justifyContent: 'flex-end',
+  },
+  serviceName: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 8,
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  servicePriceTag: {
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    alignSelf: 'flex-start',
+  },
+  servicePriceText: {
+    color: '#0d525a',
+    fontSize: 14,
+    fontWeight: '700',
+  },
   offerCard: {
     backgroundColor: '#fff',
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: 'hidden',
-    marginRight: 12,
-    width: 200,
+    marginRight: 16,
+    width: 220,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
   },
   offerImage: {
     width: '100%',
-    height: 120,
+    height: 140,
     backgroundColor: '#f0f0f0',
   },
   offerContent: {
-    padding: 12,
+    padding: 14,
   },
   offerTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    marginBottom: 10,
   },
   offerPriceContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   offerOriginalPrice: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#999',
     textDecorationLine: 'line-through',
     marginRight: 8,
   },
   offerPrice: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '800',
     color: '#0d525a',
   },
   blogCard: {
     backgroundColor: '#fff',
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: 'hidden',
-    marginRight: 12,
-    width: 220,
+    marginRight: 16,
+    width: 260,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
   },
   blogImage: {
     width: '100%',
-    height: 140,
+    height: 160,
     backgroundColor: '#f0f0f0',
   },
   blogContent: {
-    padding: 12,
+    padding: 14,
   },
   blogTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 6,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    marginBottom: 8,
+    lineHeight: 22,
   },
   blogExcerpt: {
-    fontSize: 13,
+    fontSize: 14,
     color: '#666',
-    lineHeight: 18,
+    lineHeight: 20,
   },
 });
