@@ -13,8 +13,8 @@ import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { useBookingStore } from '@/store/bookingStore';
 import { useConfigStore } from '@/store/configStore';
-import { getDepartments, bookingKeys } from '@/api/endpoints/booking';
-import { Department } from '@/api/types/booking';
+import { servicesApi } from '@/api/endpoints';
+import { Service } from '@/api/types';
 import { useTField } from '@/utils/localization';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { ErrorView } from '@/components/ErrorView';
@@ -24,19 +24,29 @@ export default function BookingDepartmentsScreen() {
   const tField = useTField();
   const themeColor = useConfigStore((state) => state.getThemeColor());
   const { selectedDepartment, setDepartment } = useBookingStore();
-  const [localSelected, setLocalSelected] = useState<Department | null>(selectedDepartment);
+  const [localSelected, setLocalSelected] = useState<any>(selectedDepartment);
 
   const {
-    data: departments,
+    data: servicesResponse,
     isLoading,
     error,
     refetch,
   } = useQuery({
-    queryKey: bookingKeys.departments(),
-    queryFn: getDepartments,
+    queryKey: ['services'],
+    queryFn: () => servicesApi.getServices(),
   });
 
-  const handleSelectDepartment = (department: Department) => {
+  // Convert services to departments format
+  const departments = servicesResponse?.data?.map((service: Service) => ({
+    id: service.id,
+    name_en: service.name_en || service.name,
+    name_ar: service.name_ar,
+    description_en: service.description_en || service.description,
+    description_ar: service.description_ar,
+    slug: service.slug,
+  })) || [];
+
+  const handleSelectDepartment = (department: any) => {
     setLocalSelected(department);
   };
 
@@ -51,7 +61,7 @@ export default function BookingDepartmentsScreen() {
     return <LoadingScreen />;
   }
 
-  if (error || !departments) {
+  if (error || !servicesResponse) {
     return (
       <ErrorView
         message={(error as any)?.message || t('failed_to_load_departments')}
@@ -60,7 +70,18 @@ export default function BookingDepartmentsScreen() {
     );
   }
 
-  const renderDepartment = ({ item }: { item: Department }) => {
+  if (departments.length === 0) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.emptyContainer}>
+          <Ionicons name="folder-open-outline" size={64} color="#ccc" />
+          <Text style={styles.emptyText}>{t('no_departments_available')}</Text>
+        </View>
+      </View>
+    );
+  }
+
+  const renderDepartment = ({ item }: { item: any }) => {
     const name = tField(item.name_ar, item.name_en);
     const description = tField(item.description_ar, item.description_en);
     const isSelected = localSelected?.id === item.id;
